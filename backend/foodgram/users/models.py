@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-# from foodgram.recipes.models import Recipe
 from django.contrib.auth.hashers import check_password, make_password
 
 
@@ -29,24 +28,12 @@ class User(AbstractUser):
 class Subscription(models.Model):
     """Модель подписки на пользователя"""
     subscriber = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='subscriptions')
+                                   related_name='subscriptions')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='subscribers')
+                               related_name='subscribers')
 
     class Meta:
         unique_together = ('subscriber', 'author')
 
     def __str__(self):
         return f"{self.subscriber} follows {self.author}"
-
-
-class FavoriteRecipe(models.Model):
-    """Модель избранное"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-
-
-class ShoppingCart(models.Model):
-    """Модель список покупок"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    shopping_recipe = models.ManyToManyField(Recipe)
