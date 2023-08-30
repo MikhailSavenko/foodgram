@@ -30,7 +30,7 @@ class Tag(models.Model):
 
 class Recipe(models.Model):
     """Модель Рецепт"""
-    author = models.ForeignKey(User, on_delete=models.CASCADE, blank=False)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, related_name='recipes')
     name = models.CharField(max_length=200, blank=False)
     ingredients = models.ManyToManyField(Ingredient, blank=False)
     tags = models.ManyToManyField(Tag, blank=False)
@@ -43,7 +43,7 @@ class IngredientRecipeAmount(models.Model):
     """Промежуточная модель связи Рецепта Ингредиента с добавлением количества """
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    amount = models.IntegerField()
+    amount = models.IntegerField(blank=False)
 
 
 class FavoriteRecipe(models.Model):
