@@ -30,10 +30,15 @@ class Tag(models.Model):
 
 class Recipe(models.Model):
     """Модель Рецепт"""
-    author = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, related_name='recipes')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, 
+                               related_name='recipes')
     name = models.CharField(max_length=200, blank=False)
-    ingredients = models.ManyToManyField(Ingredient, blank=False)
-    tags = models.ManyToManyField(Tag, blank=False)
+    ingredients = models.ManyToManyField(Ingredient,
+                                         through='IngredientRecipeAmount',
+                                         blank=False,
+                                         related_name='recipes')
+    tags = models.ManyToManyField(Tag, blank=False,
+                                  related_name='recipes')
     text = models.TextField(blank=False)
     cooking_time = models.IntegerField(blank=False)
     image = models.BinaryField(blank=False)
