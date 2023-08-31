@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from users.models import User
+from django.core.validators import MinValueValidator
 
 
 class Ingredient(models.Model):
@@ -46,9 +47,10 @@ class Recipe(models.Model):
 
 class IngredientRecipeAmount(models.Model):
     """Промежуточная модель связи Рецепта Ингредиента с добавлением количества """
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE) # может есть смысл в related_name = amount для сериализатора 
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    amount = models.IntegerField(blank=False)
+    amount = models.IntegerField(blank=False, default=1,
+                                 validators=[MinValueValidator(1)])
 
 
 class FavoriteRecipe(models.Model):
