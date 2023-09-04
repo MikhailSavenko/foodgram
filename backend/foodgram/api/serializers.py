@@ -36,6 +36,20 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
 
         return recipe
+    
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        # обновляем рецепт полученными данными
+        for attr, value  in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        # создаем или берем ингредиент
+        for ingredient in ingredients:
+            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
+        # вяжем с рецептом
+        IngredientRecipeAmount.objects.create(recipe=instance, ingredient=current_ingredient)
+
+        return instance
 
 
 class RecipeUserSerializer(serializers.ModelSerializer):
@@ -112,7 +126,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoriteRecipe
         fields = ('id', )
-
+    # не факт что нужно описывать метод добавления
     def create(self, validated_data):
         id = validated_data.get('id')
         user = self.context['request'].user
@@ -130,7 +144,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
         serialized_recipe = RecipeUserSerializer(recipe, context=self.context).data
         
         return serialized_recipe
-
+    # Нужен ли вообще метод делит, возможно хватит дэфолтного
     def delete(self, validated_data):
         id = validated_data.get('id')
         user = self.context['request'].user
