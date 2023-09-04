@@ -6,6 +6,13 @@ from validators import validate
 from backend.foodgram.users.models import Subscription, User
 
 
+class IngredientSerializer(serializers.ModelSerializer):
+    """Сериалайзер Ингредиент"""
+    class Meta:
+        model = Ingredient
+        fields = ('id', 'name', 'measurement_unit')
+
+
 class IngredientM2MSerializer(serializers.ModelSerializer):
     ingredient = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
 
@@ -20,7 +27,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Получить"""
     class Meta:
         model = Recipe
-
+        # поднастроить при тестировании через постман, если понадобится
         fields = '__all__'
 
 
@@ -134,7 +141,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoriteRecipe
         fields = ('id', )
-    # не факт что нужно описывать метод добавления
+
     def create(self, validated_data):
         id = validated_data.get('id')
         user = self.context['request'].user
