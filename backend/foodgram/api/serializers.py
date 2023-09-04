@@ -16,6 +16,14 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         read_only_fields = ('ingredient',)
 
 
+class RecipeGetSerializer(serializers.ModelSerializer):
+    """Сериалайзер Рецепт Получить"""
+    class Meta:
+        model = Recipe
+
+        fields = '__all__'
+
+
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used', required=True)
@@ -142,7 +150,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
         FavoriteRecipe.objects.create(recipe=recipe, user=user)
         # возвращаем данные рецепта
         serialized_recipe = RecipeUserSerializer(recipe, context=self.context).data
-        
+  
         return serialized_recipe
     # Нужен ли вообще метод делит, возможно хватит дэфолтного
     def delete(self, validated_data):
