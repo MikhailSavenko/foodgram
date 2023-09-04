@@ -1,9 +1,41 @@
 from rest_framework import serializers
 from rest_framework import status
-from backend.foodgram.recipes.models import FavoriteRecipe, Recipe, Tag
+from backend.foodgram.recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, Tag
 from validators import validate
 
 from backend.foodgram.users.models import Subscription, User
+
+
+class IngredientM2MSerializer(serializers.ModelSerializer):
+    ingredient = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+
+    class Meta:
+        
+        model = IngredientRecipeAmount
+        fields = ('ingredient', 'amount')
+        read_only_fields = ('ingredient',)
+
+
+class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
+    """Сериалайзер Рецепт Создание, Обновление"""
+    ingredients = IngredientM2MSerializer(many=True, source='ingredient_used', required=True)
+    
+    class Meta:
+
+        model = Recipe
+        fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author')
+        # серик не ждет от пост запроса это поле, а сам подставит при создании
+        read_only_fields = ('author',)
+    
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(**validated_data)
+        for ingredient in ingredients:
+            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
+        
+        IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
+
+        return recipe
 
 
 class RecipeUserSerializer(serializers.ModelSerializer):
@@ -18,21 +50,21 @@ class RecipeUserSerializer(serializers.ModelSerializer):
 class UserRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор User с recipe для вложения в SubscriptionSerializer"""
     is_subscribed = serializers.SerializerMethodField()
-    recipe = RecipeUserSerializer(many=True)
+    recipes = RecipeUserSerializer(many=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed', 'recipe')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed', 'recipes')
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
         subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
         return subscription_exist
-    
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Сериализатор подписки"""
-    # В выдачу добавляются рецепты 
+    # В выдачу добавляются рецепты
     author = serializers.UserRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
@@ -75,7 +107,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор Избранные рецепты"""
-    id = serializers.RecipeUserSerializer(source='recipe')
+    # id = serializers.RecipeUserSerializer(source='recipe')
 
     class Meta:
         model = FavoriteRecipe

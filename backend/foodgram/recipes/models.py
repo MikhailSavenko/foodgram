@@ -34,9 +34,10 @@ class Recipe(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, 
                                related_name='recipes')
     name = models.CharField(max_length=200, blank=False)
+    # установил blank True чтобы можно было создать рецепт без ингредиента в сериализаторе RecipeCreateUpdateSerializer
     ingredients = models.ManyToManyField(Ingredient,
                                          through='IngredientRecipeAmount',
-                                         blank=False,
+                                         blank=True,
                                          related_name='recipes')
     tags = models.ManyToManyField(Tag, blank=False,
                                   related_name='recipes')
@@ -47,8 +48,8 @@ class Recipe(models.Model):
 
 class IngredientRecipeAmount(models.Model):
     """Промежуточная модель связи Рецепта Ингредиента с добавлением количества """
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE) # может есть смысл в related_name = amount для сериализатора 
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredient_used') # может есть смысл в related_name = amount для сериализатора 
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='recipe_used')
     amount = models.IntegerField(blank=False, default=1,
                                  validators=[MinValueValidator(1)])
 
