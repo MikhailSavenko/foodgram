@@ -1,9 +1,45 @@
 from rest_framework import serializers
 from rest_framework import status
-from backend.foodgram.recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, Tag
+from backend.foodgram.recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, ShoppingCart, Tag
 from validators import validate
 
 from backend.foodgram.users.models import Subscription, User
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    """Сериалайзер Список покупок добавить/удалить"""
+    
+    class Meta:
+        model = ShoppingCart
+        fields = ('id', )
+
+    def create(self, validated_data):
+        id = validated_data.get('id')
+        user = self.context['request'].user
+        # проверяем существование рецепта
+        try:
+            recipe = Recipe.objects.get(id=id)
+        except Recipe.DoesNotExist:
+            raise serializers.ValidationError('Рецепт с указанным id не существует')
+        # проверяем не находится ли он уже в 
+        if ShoppingCart.objects.filter(recipe=recipe, user=user).exists():
+            raise serializers.ValidationError('Рецепт уже в списке покупок', status=status.HTTP_400_BAD_REQUEST)
+        # добавляем в избранное
+        ShoppingCart.objects.create(recipe=recipe, user=user)
+        # возвращаем данные рецепта
+        serialized_recipe = RecipeUserSerializer(recipe, context=self.context).data
+        return serialized_recipe
+    
+    def delete(self, validated_data):
+        id = validated_data.get('id')
+        user = self.context['request'].user
+
+        try:
+            shopping_cart_recipe = ShoppingCart.objects.get(recipe=id, user=user)
+        except ShoppingCart.DoesNotExist:
+            raise serializers.ValidationError('Рецепт не найден в списке покупок', status=status.HTTP_404_NOT_FOUND)
+
+        shopping_cart_recipe.delete()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -47,9 +83,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
             current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
-        
         IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
-
         return recipe
     
     def update(self, instance, validated_data):
