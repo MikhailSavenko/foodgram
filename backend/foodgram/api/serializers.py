@@ -56,7 +56,7 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         
         model = IngredientRecipeAmount
         fields = ('ingredient', 'amount')
-        read_only_fields = ('ingredient',)
+        # read_only_fields = ('ingredient',)
 
 
 class RecipeGetSerializer(serializers.ModelSerializer):
@@ -83,7 +83,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
             current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
-        IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
+            IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
         return recipe
     
     def update(self, instance, validated_data):
@@ -96,8 +96,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
         # вяжем с рецептом
-        IngredientRecipeAmount.objects.create(recipe=instance, ingredient=current_ingredient)
-
+            IngredientRecipeAmount.objects.create(recipe=instance, ingredient=current_ingredient)
         return instance
 
 

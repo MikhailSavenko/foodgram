@@ -15,13 +15,8 @@ class Ingredient(models.Model):
 
 class Tag(models.Model):
     """Модель Тэг"""
-    class Name(models.TextChoices):
-        BREAKFAST = 'завтрак', _('Завтрак')
-        LUNCH = 'обед', _('Обед')
-        DINNER = 'ужин', _('Ужин')
-
     name = models.CharField(
-        max_length=30, choices=Name.choices, blank=False, unique=True)
+        max_length=30, blank=False, unique=True)
     color = models.CharField(max_length=20, blank=False, unique=True,)
     slug = models.SlugField(unique=True, blank=False)
 
