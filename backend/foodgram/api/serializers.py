@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from rest_framework import status
-from backend.foodgram.recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, ShoppingCart, Tag
-from validators import validate
+from recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, ShoppingCart, Tag
+from .validators import validate
 
-from backend.foodgram.users.models import Subscription, User
+from users.models import Subscription, User
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
@@ -128,7 +128,7 @@ class UserRecipeSerializer(serializers.ModelSerializer):
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Сериализатор подписки"""
     # В выдачу добавляются рецепты
-    author = serializers.UserRecipeSerializer(many=True, read_only=True)
+    author = UserRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
