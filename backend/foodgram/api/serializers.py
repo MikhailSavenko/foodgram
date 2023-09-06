@@ -59,7 +59,7 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         # read_only_fields = ('ingredient',)
 
 
-class RecipeGetSerializer(serializers.ModelSerializer):
+class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Получить"""
     class Meta:
         model = Recipe
