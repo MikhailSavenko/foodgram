@@ -49,16 +49,6 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
-class IngredientM2MSerializer(serializers.ModelSerializer):
-    ingredient = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-
-    class Meta:
-        
-        model = IngredientRecipeAmount
-        fields = ('ingredient', 'amount')
-        # read_only_fields = ('ingredient',)
-
-
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Получить"""
     class Meta:
@@ -67,9 +57,20 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class IngredientM2MSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
+
+    class Meta:
+        
+        model = IngredientRecipeAmount
+        fields = ('id', 'amount')
+        # read_only_fields = ('ingredient',)
+
+
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
-    ingredients = IngredientM2MSerializer(many=True, source='ingredient_used', required=True)
+    # ПОЧЕМУ МЫ БЕРЕМ НАЗВАНИЕ source ingredient_used????????
+    ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     
     class Meta:
 
@@ -79,8 +80,11 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ('author',)
     
     def create(self, validated_data):
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(**validated_data)
+        ingredients = validated_data.pop('ingredient_used')
+        tags_data = validated_data.pop('tags')
+        author = self.context['request'].user
+        recipe = Recipe.objects.create(author=author, **validated_data)
+        recipe.tags.set(tags_data)
         for ingredient in ingredients:
             current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
             IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)

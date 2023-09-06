@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from api.serializers import IngredientSerializer, TagSerializer, RecipeReadSerializer, RecipeCreateUpdateSerializer
-
+from rest_framework.permissions import AllowAny
 from recipes.models import Ingredient, Tag, Recipe
 
 
