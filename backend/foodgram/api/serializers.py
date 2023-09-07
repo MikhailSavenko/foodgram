@@ -99,17 +99,31 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
-    # ПОЧЕМУ МЫ БЕРЕМ НАЗВАНИЕ source ingredient_used????????
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     author = UserSerializer(read_only=True)
-
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+    #tags = TagSerializer(many=True)
+    #tags = serializers.PrimaryKeyRelatedField(read_only=True)
+    #tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True) 
+    
     class Meta:
 
         model = Recipe
-        fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author')
+        fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
         # серик не ждет от пост запроса это поле, а сам подставит при создании
-        read_only_fields = ('author',)
+        read_only_fields = ('author', 'is_favorited', 'is_in_shopping_cart')
     
+    def get_is_in_shopping_cart(self, obj):
+        user = self.context['request'].user
+        is_in_shopping_cart = ShoppingCart.objects.filter(user=user, shopping_recipe=obj).exists()
+        return is_in_shopping_cart
+
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        is_favorited = FavoriteRecipe.objects.filter(user=user, recipe=obj).exists()
+        return is_favorited
+
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
