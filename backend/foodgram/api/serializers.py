@@ -61,17 +61,17 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
 
     class Meta:
-        
+    
         model = IngredientRecipeAmount
         fields = ('id', 'amount')
-        # read_only_fields = ('ingredient',)
+        read_only_fields = ('ingredient',)
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
     # ПОЧЕМУ МЫ БЕРЕМ НАЗВАНИЕ source ingredient_used????????
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
-    
+
     class Meta:
 
         model = Recipe
@@ -86,10 +86,16 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
         for ingredient in ingredients:
-            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
-            IngredientRecipeAmount.objects.create(recipe=recipe, ingredient=current_ingredient)
+            current_ingredient = ingredient.get('ingredient')
+            amount = ingredient.get('amount')
+            recipe.ingredients.add(
+                current_ingredient,
+                through_defaults={
+                    'amount': amount
+                }
+            )
         return recipe
-    
+    # НУЖНО ПЕРЕПИСАТЬ АПДЕЙТ!!!!!
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
         # обновляем рецепт полученными данными

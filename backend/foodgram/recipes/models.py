@@ -31,7 +31,7 @@ class Recipe(models.Model):
     # установил blank True чтобы можно было создать рецепт без ингредиента в сериализаторе RecipeCreateUpdateSerializer
     ingredients = models.ManyToManyField(Ingredient,
                                          through='IngredientRecipeAmount',
-                                         blank=True,
+                                         blank=False,
                                          related_name='recipes')
     tags = models.ManyToManyField(Tag, blank=False,
                                   related_name='recipes')
@@ -46,7 +46,10 @@ class IngredientRecipeAmount(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='recipe_used')
     amount = models.IntegerField(blank=False, default=1,
                                  validators=[MinValueValidator(1)])
-
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['recipe', 'ingredient'], name='recipe_ingredient')
+        ]
 
 class FavoriteRecipe(models.Model):
     """Модель избранное"""
