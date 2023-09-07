@@ -67,11 +67,14 @@ class TagSerializer(serializers.ModelSerializer):
 
 class IngredientM2MSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
+    # здесь я беру поле ingredient и вытаскиваю из связанной модели нужное мне поле в нем 
+    measurement_unit = serializers.StringRelatedField(read_only=True, source='ingredient.measurement_unit')
+    name = serializers.StringRelatedField(read_only=True, source='ingredient.name')
 
     class Meta:
     
         model = IngredientRecipeAmount
-        fields = ('id', 'amount')
+        fields = ('id', 'amount', 'measurement_unit', 'name')
         read_only_fields = ('ingredient',)
 
 
@@ -92,7 +95,7 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validate(self, data)
         return super().validate(data)
-    
+
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
