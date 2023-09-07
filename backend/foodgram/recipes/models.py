@@ -46,10 +46,12 @@ class IngredientRecipeAmount(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='recipe_used')
     amount = models.IntegerField(blank=False, default=1,
                                  validators=[MinValueValidator(1)])
+    
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['recipe', 'ingredient'], name='recipe_ingredient')
         ]
+
 
 class FavoriteRecipe(models.Model):
     """Модель избранное"""

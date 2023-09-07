@@ -57,6 +57,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор тэга"""
+
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'color', 'slug')
+
+
 class IngredientM2MSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
 
@@ -67,10 +75,30 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         read_only_fields = ('ingredient',)
 
 
+class UserSerializer(serializers.ModelSerializer):
+    """Сериализатор пользователя"""
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'password', 'email', 'first_name', 'last_name', 'is_subscribed')
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def get_is_subscribed(self, obj):
+        user = self.context['request'].user
+        subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
+        return subscription_exist
+
+    def validate(self, data):
+        validate(self, data)
+        return super().validate(data)
+    
+
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Создание, Обновление"""
     # ПОЧЕМУ МЫ БЕРЕМ НАЗВАНИЕ source ingredient_used????????
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
+    author = UserSerializer(read_only=True)
 
     class Meta:
 
@@ -148,33 +176,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         recipes_count = Recipe.objects.filter(author=user).count()
         return recipes_count
-
- 
-class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор пользователя"""
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'password', 'email', 'first_name', 'last_name', 'is_subscribed')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
-        return subscription_exist
-
-    def validate(self, data):
-        validate(self, data)
-        return super().validate(data)
-
-
-class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор тэга"""
-
-    class Meta:
-        model = Tag
-        fields = ('id', 'name', 'color', 'slug')
 
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
