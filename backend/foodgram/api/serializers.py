@@ -118,11 +118,10 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
 
         model = Recipe
-        fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
+        fields = ('id', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
         # серик не ждет от пост запроса это поле, а сам подставит при создании
-        read_only_fields = ('author', 'is_favorited', 'is_in_shopping_cart')
+        read_only_fields = ('id', 'author', 'is_favorited', 'is_in_shopping_cart')
 
-    
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
         is_in_shopping_cart = ShoppingCart.objects.filter(user=user, shopping_recipe=obj).exists()
@@ -149,20 +148,31 @@ class RecipeSerializer(serializers.ModelSerializer):
                 }
             )
         return recipe
-    # НУЖНО ПЕРЕПИСАТЬ АПДЕЙТ!!!!!
-    # def update(self, instance, validated_data):
-        ingredients = validated_data.pop('ingredients_used')
-        tags_data = validated_data.pop('tags')
-        # обновляем рецепт полученными данными
-        for attr, value  in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        # создаем или берем ингредиент
-        for ingredient in ingredients:
-            current_ingredient = ingredient.get
-        # вяжем с рецептом
-            IngredientRecipeAmount.objects.create(recipe=instance, ingredient=current_ingredient)
-        return instance
+    
+    def update(self, instance, validated_data):
+        ingredients_data = validated_data.pop('ingredient_used', None)
+        tags_data = validated_data.pop('tags', None)
+        instance.tags.set(tags_data)
+        if ingredients_data:
+            for ingredient in ingredients_data:
+                current_ingredient = ingredient.get('ingredient')
+                amount = ingredient.get('amount')
+                # Проверяем, если такой ингредиент уже существует, обновляем его количество
+                existing_ingredient = instance.ingredients.filter(pk=current_ingredient.pk).first()
+                if existing_ingredient:
+                    instance.ingredients.through.objects.filter(
+                        recipe=instance,
+                        ingredient=current_ingredient
+                    ).update(amount=amount)
+                else:
+                    instance.ingredients.add(
+                        current_ingredient,
+                        through_defaults={
+                        'amount': amount
+                        }
+                    )
+            instance.save()
+        return super().update(instance, validated_data)
 
 
 class RecipeUserSerializer(serializers.ModelSerializer):
