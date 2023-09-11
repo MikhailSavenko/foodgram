@@ -97,7 +97,7 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
         read_only_fields = ('name', 'color', 'slug')
-    
+
     def to_internal_value(self, data):
         """Достает id из списка запроса и передает в поле id как значение словаря"""
         data_dict = {}
@@ -116,7 +116,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
 
     class Meta:
-
         model = Recipe
         fields = ('id', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
         # серик не ждет от пост запроса это поле, а сам подставит при создании
@@ -148,7 +147,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                 }
             )
         return recipe
-    
+
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredient_used', None)
         tags_data = validated_data.pop('tags', None)
@@ -168,10 +167,10 @@ class RecipeSerializer(serializers.ModelSerializer):
                     instance.ingredients.add(
                         current_ingredient,
                         through_defaults={
-                        'amount': amount
+                            'amount': amount
                         }
                     )
-            instance.save()
+                    instance.save()
         return super().update(instance, validated_data)
 
 
