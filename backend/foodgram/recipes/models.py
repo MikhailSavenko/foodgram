@@ -34,7 +34,7 @@ class Recipe(models.Model):
                                          blank=False,
                                          related_name='recipes')
     tags = models.ManyToManyField(Tag, blank=False,
-                                  related_name='recipes')
+                                  related_name='recipes_tags')
     text = models.TextField(blank=False)
     cooking_time = models.IntegerField(blank=False)
     image = models.BinaryField(blank=False)

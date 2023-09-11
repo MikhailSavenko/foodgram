@@ -51,18 +51,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт Получить"""
+    # забракованный серик, на удаление вероятнее всего
     class Meta:
         model = Recipe
         # поднастроить при тестировании через постман, если понадобится
         fields = '__all__'
-
-
-class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор тэга"""
-
-    class Meta:
-        model = Tag
-        fields = ('id', 'name', 'color', 'slug')
 
 
 class IngredientM2MSerializer(serializers.ModelSerializer):
@@ -97,22 +90,38 @@ class UserSerializer(serializers.ModelSerializer):
         return super().validate(data)
 
 
-class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    """Сериалайзер Рецепт Создание, Обновление"""
+class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор тэга"""
+
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'color', 'slug')
+        read_only_fields = ('name', 'color', 'slug')
+    
+    def to_internal_value(self, data):
+        """Достает id из списка запроса и передает в поле id как значение словаря"""
+        data_dict = {}
+        for i in data:
+            i = int(i)
+            data_dict['id'] = i
+        return data_dict['id']
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    """Сериалайзер Рецепт"""
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    #tags = TagSerializer(many=True)
-    #tags = serializers.PrimaryKeyRelatedField(read_only=True)
-    #tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True) 
-    
+    tags = TagSerializer(many=True)
+
     class Meta:
 
         model = Recipe
         fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
         # серик не ждет от пост запроса это поле, а сам подставит при создании
         read_only_fields = ('author', 'is_favorited', 'is_in_shopping_cart')
+
     
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
@@ -141,15 +150,16 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             )
         return recipe
     # НУЖНО ПЕРЕПИСАТЬ АПДЕЙТ!!!!!
-    def update(self, instance, validated_data):
-        ingredients = validated_data.pop('ingredients')
+    # def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients_used')
+        tags_data = validated_data.pop('tags')
         # обновляем рецепт полученными данными
         for attr, value  in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         # создаем или берем ингредиент
         for ingredient in ingredients:
-            current_ingredient, status = Ingredient.objects.get_or_create(**ingredient)
+            current_ingredient = ingredient.get
         # вяжем с рецептом
             IngredientRecipeAmount.objects.create(recipe=instance, ingredient=current_ingredient)
         return instance
