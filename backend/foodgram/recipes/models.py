@@ -37,7 +37,7 @@ class Recipe(models.Model):
                                   related_name='recipes_tags')
     text = models.TextField(blank=False)
     cooking_time = models.IntegerField(blank=False)
-    image = models.BinaryField(blank=False)
+    image = models.ImageField(blank=True, upload_to='recipe_images/')
 
 
 class IngredientRecipeAmount(models.Model):

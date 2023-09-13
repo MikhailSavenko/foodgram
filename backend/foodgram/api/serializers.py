@@ -234,37 +234,40 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор Избранные рецепты"""
-    # id = serializers.RecipeUserSerializer(source='recipe')
+    id = serializers.PrimaryKeyRelatedField(read_only=True, source='recipe.id')
+    name = serializers.StringRelatedField(read_only=True, source='recipe.name')
+    cooking_time = serializers.IntegerField(read_only=True, source='recipe.cooking_time')
+    image = serializers.ImageField(read_only=True, source='recipe.image')
 
     class Meta:
         model = FavoriteRecipe
-        fields = ('id', )
+        fields = ('id', 'name', 'cooking_time', 'image')
+        read_only_fields = ('id', 'name', 'cooking_time', 'image')
 
     def create(self, validated_data):
-        id = validated_data.get('id')
         user = self.context['request'].user
+        recipe_id = self.context['view'].kwargs['recipe_id']
         # проверяем существование рецепта
         try:
-            recipe = Recipe.objects.get(id=id)
+            recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
             raise serializers.ValidationError('Рецепт с указанным id не существует')
         # проверяем не находится ли он уже в избранном
         if FavoriteRecipe.objects.filter(recipe=recipe, user=user).exists():
-            raise serializers.ValidationError('Рецепт уже в избранном', status=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError('Рецепт уже в избранном')
         # добавляем в избранное
-        FavoriteRecipe.objects.create(recipe=recipe, user=user)
-        # возвращаем данные рецепта
-        serialized_recipe = RecipeUserSerializer(recipe, context=self.context).data
-  
-        return serialized_recipe
+        favorite_recipe = FavoriteRecipe.objects.create(recipe=recipe, user=user)
+        return favorite_recipe
+    
     # Нужен ли вообще метод делит, возможно хватит дэфолтного
     def delete(self, validated_data):
-        id = validated_data.get('id')
+        recipe_id = self.context['view'].kwargs['recipe_id']
         user = self.context['request'].user
 
         try:
-            favorite_recipe = FavoriteRecipe.objects.get(recipe=id, user=user)
+            favorite_recipe = FavoriteRecipe.objects.get(recipe=recipe_id, user=user)
         except FavoriteRecipe.DoesNotExist:
-            raise serializers.ValidationError('Рецепт не найден в избранном', status=status.HTTP_404_NOT_FOUND)
+            raise serializers.ValidationError('Рецепт не найден в избранном')
 
         favorite_recipe.delete()
+        return
