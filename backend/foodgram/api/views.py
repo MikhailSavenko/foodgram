@@ -33,3 +33,4 @@ class FavoriteRecipeView(CreateDestroyView):
     queryset = FavoriteRecipe.objects.all()
     serializer_class = FavoriteRecipeSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'recipe_id'

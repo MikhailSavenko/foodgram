@@ -258,16 +258,3 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
         # добавляем в избранное
         favorite_recipe = FavoriteRecipe.objects.create(recipe=recipe, user=user)
         return favorite_recipe
-    
-    # Нужен ли вообще метод делит, возможно хватит дэфолтного
-    def delete(self, validated_data):
-        recipe_id = self.context['view'].kwargs['recipe_id']
-        user = self.context['request'].user
-
-        try:
-            favorite_recipe = FavoriteRecipe.objects.get(recipe=recipe_id, user=user)
-        except FavoriteRecipe.DoesNotExist:
-            raise serializers.ValidationError('Рецепт не найден в избранном')
-
-        favorite_recipe.delete()
-        return
