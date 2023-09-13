@@ -17,7 +17,7 @@ class Tag(models.Model):
     name = models.CharField(
         max_length=30, blank=False, unique=True)
     color = models.CharField(max_length=20, blank=False, unique=True,)
-    slug = models.SlugField(unique=True, blank=False)
+    slug = models.SlugField(blank=False, unique=True)
 
     def __str__(self):
         return self.name

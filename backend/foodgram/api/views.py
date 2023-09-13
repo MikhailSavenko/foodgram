@@ -1,8 +1,10 @@
-from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework import viewsets, status
 from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, UserSerializer
 from rest_framework.permissions import AllowAny
 from recipes.models import Ingredient, Tag, Recipe
 from users.models import User
+from rest_framework.decorators import action
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -21,9 +23,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+# ДОБАВИТЬ ФИЛЬТРАЦИЮ!
+# НАСТРОИТЬ PERMISSIONS
 
-
-# class UserViewSet(viewsets.ReadOnlyModelViewSet):
-#     """Представление для пользователей чтение"""
-#     queryset = User.objects.all()
-#     serializer_class = UserSerializer

@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.auth.hashers import check_password, make_password
 
 
 class User(AbstractUser):
@@ -15,14 +14,6 @@ class User(AbstractUser):
     last_name = models.CharField(
         max_length=150, blank=False, verbose_name='Фамилия'
     )
-    password = models.CharField(max_length=150, blank=False,
-                                verbose_name='Пароль')
-
-    def set_password(self, raw_password):
-        self.password = make_password(raw_password)
-
-    def check_password(self, raw_password):
-        return check_password(raw_password, self.password)
 
 
 class Subscription(models.Model):

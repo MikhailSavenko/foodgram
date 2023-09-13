@@ -78,12 +78,22 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'password', 'email', 'first_name', 'last_name', 'is_subscribed')
+        read_only_fields = ('id', 'is_subscribed')
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
-        subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
-        return subscription_exist
+        if user.is_authenticated:
+            subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
+            return subscription_exist
+        return False
+    
+    def create(self, validated_data):
+        """Хэшируем пароль"""
+        password = validated_data.pop('password')
+        print(password)
+        user = User.objects.create_user(**validated_data, password=password)
+        return user
 
     def validate(self, data):
         validate(self, data)
