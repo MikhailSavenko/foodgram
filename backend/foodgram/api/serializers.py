@@ -71,15 +71,14 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         read_only_fields = ('ingredient',)
 
 
-class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор пользователя"""
+class UserReadSerializer(serializers.ModelSerializer):
+    """Сериализатор чтения пользователя"""
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'password', 'email', 'first_name', 'last_name', 'is_subscribed')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed')
         read_only_fields = ('id', 'is_subscribed')
-        extra_kwargs = {'password': {'write_only': True}}
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
@@ -88,10 +87,19 @@ class UserSerializer(serializers.ModelSerializer):
             return subscription_exist
         return False
     
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор создания пользователя"""
+    
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'password', 'email', 'first_name', 'last_name')
+        read_only_fields = ('id',)
+        extra_kwargs = {'password': {'write_only': True}}
+    
     def create(self, validated_data):
         """Хэшируем пароль"""
         password = validated_data.pop('password')
-        print(password)
         user = User.objects.create_user(**validated_data, password=password)
         return user
 
@@ -120,7 +128,7 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт"""
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
-    author = UserSerializer(read_only=True)
+    author = UserReadSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)

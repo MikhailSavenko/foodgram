@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status
-from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, UserSerializer
+from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer
 from rest_framework.permissions import AllowAny
 from recipes.models import Ingredient, Tag, Recipe
 from users.models import User

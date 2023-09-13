@@ -40,9 +40,9 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'AUTHENTICATION_BACKEND': 'django.contrib.auth.backends.ModelBackend',
     'SERIALIZERS': {
-        'user': 'api.serializers.UserSerializer',
-        'current_user': 'api.serializers.UserSerializer',
-        'user_create': 'api.serializers.UserSerializer',
+        'user': 'api.serializers.UserReadSerializer',
+        'current_user': 'api.serializers.UserReadSerializer',
+        'user_create': 'api.serializers.UserCreateSerializer',
         'token_create': 'djoser.serializers.TokenCreateSerializer',
         'token': 'djoser.serializers.TokenSerializer',
     },
