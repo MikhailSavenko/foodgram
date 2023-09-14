@@ -216,20 +216,50 @@ class UserRecipeSerializer(serializers.ModelSerializer):
         return subscription_exist
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор подписки"""
+class SubscriptionReadSerializer(serializers.ModelSerializer):
+    """Сериализатор просмотра подписок"""
     # В выдачу добавляются рецепты
     author = UserRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription
-        fields = ('author',)
-    
+        fields = ('author', 'recipes_count')
+        read_only_fields = ('author', 'recipes_count')
+        
     def get_recipes_count(self, obj):
         user = self.context['request'].user
         recipes_count = Recipe.objects.filter(author=user).count()
         return recipes_count
+
+
+class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор подписки/отписки"""
+    # В выдачу добавляются рецепты
+    author = UserRecipeSerializer(required=False)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Subscription
+        fields = ('author', 'recipes_count', )
+        read_only_fields = ('recipes_count', 'author')
+    
+    def get_recipes_count(self, obj):
+        author_id = self.context['view'].kwargs['author_id']
+        recipes_count = Recipe.objects.filter(author=author_id).count()
+        return recipes_count
+   
+    def create(self, validated_data):
+        subscriber = self.context['request'].user
+        author_id = self.context['view'].kwargs['author_id']
+        try:
+            author = User.objects.get(id=author_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Такого автора не существует')
+        if Subscription.objects.filter(author=author, subscriber=subscriber).exists():
+            raise serializers.ValidationError('Вы уже подписаны на автора')
+        subscription_create = Subscription.objects.create(author=author, subscriber=subscriber)
+        return subscription_create
 
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
