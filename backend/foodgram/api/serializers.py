@@ -203,6 +203,7 @@ class RecipeUserSerializer(serializers.ModelSerializer):
 
 class UserRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор User с recipe для вложения в SubscriptionSerializer"""
+    #пока что не используется
     is_subscribed = serializers.SerializerMethodField()
     recipes = RecipeUserSerializer(many=True)
 
@@ -215,18 +216,23 @@ class UserRecipeSerializer(serializers.ModelSerializer):
         subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
         return subscription_exist
 
-
+    
 class SubscriptionReadSerializer(serializers.ModelSerializer):
-    """Сериализатор просмотра подписок"""
-    # В выдачу добавляются рецепты
-    author = UserRecipeSerializer(many=True, read_only=True)
+    """Сериализатор просмотр подписок"""
+    #is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeUserSerializer(many=True, required=False, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Subscription
-        fields = ('author', 'recipes_count')
-        read_only_fields = ('author', 'recipes_count')
-        
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'recipes', 'recipes_count')
+        read_only_fields = ('id', 'username', 'email', 'first_name', 'last_name', 'recipes', 'recipes_count', )
+
+    # def get_is_subscribed(self, obj):
+    #     user = self.context['request'].user
+    #     subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
+    #     return subscription_exist
+
     def get_recipes_count(self, obj):
         user = self.context['request'].user
         recipes_count = Recipe.objects.filter(author=user).count()
@@ -235,32 +241,38 @@ class SubscriptionReadSerializer(serializers.ModelSerializer):
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
     """Сериализатор подписки/отписки"""
-    # В выдачу добавляются рецепты
-    author = UserRecipeSerializer(required=False)
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeUserSerializer(many=True, required=False)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Subscription
-        fields = ('author', 'recipes_count', )
-        read_only_fields = ('recipes_count', 'author')
-    
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+        read_only_fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_is_subscribed(self, obj):
+        user = self.context['request'].user
+        subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
+        return subscription_exist
+
     def get_recipes_count(self, obj):
         author_id = self.context['view'].kwargs['author_id']
         recipes_count = Recipe.objects.filter(author=author_id).count()
         return recipes_count
-   
+    
     def create(self, validated_data):
         subscriber = self.context['request'].user
         author_id = self.context['view'].kwargs['author_id']
         try:
             author = User.objects.get(id=author_id)
+            print(author)
         except User.DoesNotExist:
             raise serializers.ValidationError('Такого автора не существует')
         if Subscription.objects.filter(author=author, subscriber=subscriber).exists():
             raise serializers.ValidationError('Вы уже подписаны на автора')
-        subscription_create = Subscription.objects.create(author=author, subscriber=subscriber)
-        return subscription_create
-
+        Subscription.objects.create(author=author, subscriber=subscriber)
+        return author
+    
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор Избранные рецепты"""
