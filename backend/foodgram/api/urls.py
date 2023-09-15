@@ -1,4 +1,4 @@
-from api.views import IngredientViewSet, TagViewSet, RecipeViewSet, FavoriteRecipeView, SubscriptionsReadView, SubscriptionsCreateView
+from api.views import IngredientViewSet, TagViewSet, RecipeViewSet, FavoriteRecipeView, SubscriptionsReadView, SubscriptionsCreateView, ShoppingCartCreateView
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -11,6 +11,7 @@ router.register(r'recipes', RecipeViewSet, basename='recipes')
 
 
 urlpatterns = [
+    path('recipes/<int:recipe_id>/shopping_cart/', ShoppingCartCreateView.as_view(actions={'post': 'create', 'delete':'destroy'})),
     path('users/subscriptions/', SubscriptionsReadView.as_view(actions={'get': 'list'})),
     path('users/<int:author_id>/subscribe/', SubscriptionsCreateView.as_view(actions={'post': 'create', 'delete':'destroy'})),
     path('', include('djoser.urls')),

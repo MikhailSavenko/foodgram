@@ -1,11 +1,29 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status, mixins
-from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, FavoriteRecipeSerializer, SubscriptionReadSerializer, SubscriptionCreateSerializer
+from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, FavoriteRecipeSerializer, SubscriptionReadSerializer, SubscriptionCreateSerializer, ShoppingCartSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .viewset import CreateDestroyView
-from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe
+from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe, ShoppingCart
 from users.models import User, Subscription
 # from rest_framework.decorators import action
+
+
+class ShoppingCartCreateView(CreateDestroyView):
+    """Добавления/удаления рецепта из Списка покупок"""
+    queryset = ShoppingCart.objects.all()
+    serializer_class = ShoppingCartSerializer
+    lookup_field = 'recipe_id'
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.request.user
+        recipe_id = self.kwargs['recipe_id']
+
+        try:
+            shopping_cart_recipe = ShoppingCart.objects.get(shopping_recipe=recipe_id, user=user)
+            shopping_cart_recipe.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ShoppingCart.DoesNotExist:
+            return Response({'error': 'Рецепта нет в списке покупок'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -34,6 +52,17 @@ class FavoriteRecipeView(CreateDestroyView):
     serializer_class = FavoriteRecipeSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'recipe_id'
+    
+    def destroy(self, request, *args, **kwargs):
+        user = self.request.user
+        recipe_id = self.kwargs['recipe_id']
+
+        try:
+            favorite_recipe = FavoriteRecipe.objects.get(recipe=recipe_id, user=user)
+            favorite_recipe.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except FavoriteRecipe.DoesNotExist:
+            return Response({'error': 'Рецепта нет в избранном'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
@@ -45,7 +74,7 @@ class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
         queryset = Subscription.objects.filter(subscriber=user).select_related('author')
         return queryset
 
-            
+       
 class SubscriptionsCreateView(CreateDestroyView):
     """Представление для Подписки/Отписки на пользователя"""
     queryset = Subscription.objects.all()

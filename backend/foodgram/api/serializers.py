@@ -8,38 +8,30 @@ from users.models import Subscription, User
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
     """Сериалайзер Список покупок добавить/удалить"""
-    
+    id = serializers.PrimaryKeyRelatedField(source='shopping_recipe.id', read_only=True)
+    name = serializers.StringRelatedField(source='shopping_recipe.name', read_only=True)
+    image = serializers.ImageField(source='shopping_recipe.image', read_only=True)
+    cooking_time = serializers.IntegerField(source='shopping_recipe.cooking_time', read_only=True)
+
     class Meta:
         model = ShoppingCart
-        fields = ('id', )
+        fields = ('id', 'name', 'image', 'cooking_time')
+        read_only_fields = ('id', 'name', 'image', 'cooking_time')
 
     def create(self, validated_data):
-        id = validated_data.get('id')
+        recipe_id = self.context['view'].kwargs['recipe_id']
         user = self.context['request'].user
         # проверяем существование рецепта
         try:
-            recipe = Recipe.objects.get(id=id)
+            recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
             raise serializers.ValidationError('Рецепт с указанным id не существует')
         # проверяем не находится ли он уже в 
-        if ShoppingCart.objects.filter(recipe=recipe, user=user).exists():
-            raise serializers.ValidationError('Рецепт уже в списке покупок', status=status.HTTP_400_BAD_REQUEST)
+        if ShoppingCart.objects.filter(shopping_recipe=recipe, user=user).exists():
+            raise serializers.ValidationError('Рецепт уже в списке покупок')
         # добавляем в избранное
-        ShoppingCart.objects.create(recipe=recipe, user=user)
-        # возвращаем данные рецепта
-        serialized_recipe = RecipeUserSerializer(recipe, context=self.context).data
-        return serialized_recipe
-    
-    def delete(self, validated_data):
-        id = validated_data.get('id')
-        user = self.context['request'].user
-
-        try:
-            shopping_cart_recipe = ShoppingCart.objects.get(recipe=id, user=user)
-        except ShoppingCart.DoesNotExist:
-            raise serializers.ValidationError('Рецепт не найден в списке покупок', status=status.HTTP_404_NOT_FOUND)
-
-        shopping_cart_recipe.delete()
+        shopping_cart = ShoppingCart.objects.create(shopping_recipe=recipe, user=user)
+        return shopping_cart
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -98,7 +90,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, validated_data):
-        """Хэшируем пароль"""
+        """Хешируем пароль"""
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data, password=password)
         return user
