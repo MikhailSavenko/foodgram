@@ -86,7 +86,7 @@ class UserReadSerializer(serializers.ModelSerializer):
             subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
             return subscription_exist
         return False
-    
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания пользователя"""
@@ -193,7 +193,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeUserSerializer(serializers.ModelSerializer):
-    """Сериализатор Рецепта для вложения в UserRecipeSerializer"""
+    """Сериализатор Рецепта для вложения"""
 
     class Meta:
         
@@ -218,7 +218,7 @@ class UserRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionReadSerializer(serializers.ModelSerializer):
-    """Серик просмотра подписок 2.0"""
+    """Сериализатор просмотр подписок"""
     id = serializers.StringRelatedField(source='author.id')
     email = serializers.StringRelatedField(source='author.email')
     username = serializers.StringRelatedField(source='author.username')
@@ -275,16 +275,17 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         subscriber = self.context['request'].user
         author_id = self.context['view'].kwargs['author_id']
+        if author_id == subscriber.id:
+            raise serializers.ValidationError('На себя подписаться нельзя')
         try:
             author = User.objects.get(id=author_id)
-            print(author)
         except User.DoesNotExist:
             raise serializers.ValidationError('Такого автора не существует')
         if Subscription.objects.filter(author=author, subscriber=subscriber).exists():
             raise serializers.ValidationError('Вы уже подписаны на автора')
         Subscription.objects.create(author=author, subscriber=subscriber)
         return author
-    
+
 
 class FavoriteRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор Избранные рецепты"""

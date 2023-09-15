@@ -38,12 +38,27 @@ class FavoriteRecipeView(CreateDestroyView):
 
 class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
     """Представление просмотр подсписок"""
-    queryset = Subscription.objects.all()
     serializer_class = SubscriptionReadSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Subscription.objects.filter(subscriber=user).select_related('author')
+        return queryset
 
+            
 class SubscriptionsCreateView(CreateDestroyView):
     """Представление для Подписки/Отписки на пользователя"""
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionCreateSerializer
     lookup_field = 'author_id'
+
+    def destroy(self, request, *args, **kwargs):
+        subscriber = self.request.user
+        author_id = self.kwargs['author_id']
+
+        try:
+            subscription = Subscription.objects.get(subscriber=subscriber, author=author_id)
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Subscription.DoesNotExist:
+            return Response({'error': 'Вы не были подписаны на этого автора'}, status=status.HTTP_400_BAD_REQUEST)
