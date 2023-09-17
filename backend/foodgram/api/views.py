@@ -1,18 +1,19 @@
 from rest_framework.response import Response
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status
 from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, FavoriteRecipeSerializer, SubscriptionReadSerializer, SubscriptionCreateSerializer, ShoppingCartSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .viewset import CreateDestroyView
 from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe, ShoppingCart, IngredientRecipeAmount
 from users.models import User, Subscription
+from rest_framework.decorators import action, api_view, permission_classes
+
 from django.http import HttpResponse
-# from rest_framework.decorators import action
 
 
+@api_view(['GET'])
 def download_shopping_cart(request):
     """Скачиваем список покупок"""
     user = request.user
-    print(user)
     shopping_cart_items = ShoppingCart.objects.filter(user=user).select_related('shopping_recipe')
 
     shopping_cart = {}
@@ -31,13 +32,11 @@ def download_shopping_cart(request):
                 shopping_cart[name]['amount'] += amount
             else:
                 shopping_cart[name] = {'amount': amount, 'unit': unit}
-
     response = HttpResponse(content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename=shopping_cart.txt'
+    response['Content-Disposition'] = 'attachment; filename=shopping_cart.txt'
 
     for name, data in shopping_cart.items():
         response.write(f"{name} ({data['unit']}) — {data['amount']}\n")
-
     return response
 
 
