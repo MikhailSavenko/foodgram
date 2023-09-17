@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework import status
 from recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, Recipe, ShoppingCart, Tag
 from .validators import validate
 
@@ -111,6 +110,7 @@ class TagSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         """Достает id из списка запроса и передает в поле id как значение словаря"""
         data_dict = {}
+        data = str(data)
         for i in data:
             i = int(i)
             data_dict['id'] = i
