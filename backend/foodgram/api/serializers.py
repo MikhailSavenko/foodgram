@@ -3,6 +3,8 @@ from recipes.models import FavoriteRecipe, Ingredient, IngredientRecipeAmount, R
 from .validators import validate
 
 from users.models import Subscription, User
+import base64
+from django.core.files.base import ContentFile
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
@@ -117,6 +119,20 @@ class TagSerializer(serializers.ModelSerializer):
         return data_dict['id']
 
 
+class Base64ImageField(serializers.ImageField):
+    """
+    Custom image field to handle base64-encoded images.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+
+            data = ContentFile(base64.b64decode(imgstr), name=f'uploaded_image.{ext}')
+
+        return super().to_internal_value(data)
+    
+
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт"""
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
@@ -124,7 +140,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
-
+    image = Base64ImageField()
+    
     class Meta:
         model = Recipe
         fields = ('id', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
