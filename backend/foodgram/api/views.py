@@ -6,7 +6,6 @@ from .viewset import CreateDestroyView
 from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe, ShoppingCart, IngredientRecipeAmount
 from users.models import User, Subscription
 from rest_framework.decorators import action, api_view, permission_classes
-
 from django.http import HttpResponse
 
 
@@ -104,9 +103,10 @@ class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = Subscription.objects.filter(subscriber=user).select_related('author')
+        print(queryset)
         return queryset
+        
 
-       
 class SubscriptionsCreateView(CreateDestroyView):
     """Представление для Подписки/Отписки на пользователя"""
     queryset = Subscription.objects.all()
