@@ -42,15 +42,6 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
-class RecipeReadSerializer(serializers.ModelSerializer):
-    """Сериалайзер Рецепт Получить"""
-    # забракованный серик, на удаление вероятнее всего
-    class Meta:
-        model = Recipe
-        # поднастроить при тестировании через постман, если понадобится
-        fields = '__all__'
-
-
 class IngredientM2MSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
     # здесь я беру поле ingredient и вытаскиваю из связанной модели нужное мне поле в нем 
@@ -120,9 +111,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class Base64ImageField(serializers.ImageField):
-    """
-    Custom image field to handle base64-encoded images.
-    """
+    """Поле image для Recipe декодировка base64"""
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
@@ -131,7 +120,7 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name=f'uploaded_image.{ext}')
 
         return super().to_internal_value(data)
-    
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт"""
@@ -208,22 +197,6 @@ class RecipeUserSerializer(serializers.ModelSerializer):
         
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class UserRecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор User с recipe для вложения в SubscriptionSerializer"""
-    #пока что не используется
-    is_subscribed = serializers.SerializerMethodField()
-    recipes = RecipeUserSerializer(many=True)
-
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed', 'recipes')
-
-    def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        subscription_exist = Subscription.objects.filter(subscriber=user, author=obj).exists()
-        return subscription_exist
 
 
 class SubscriptionReadSerializer(serializers.ModelSerializer):
