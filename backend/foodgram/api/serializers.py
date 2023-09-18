@@ -130,7 +130,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
     image = Base64ImageField()
-    
+
     class Meta:
         model = Recipe
         fields = ('id', 'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time', 'author', 'is_favorited', 'is_in_shopping_cart')
@@ -168,25 +168,18 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('ingredient_used', None)
         tags_data = validated_data.pop('tags', None)
         instance.tags.set(tags_data)
+        instance.ingredients.clear()
         if ingredients_data:
             for ingredient in ingredients_data:
                 current_ingredient = ingredient.get('ingredient')
                 amount = ingredient.get('amount')
-                # Проверяем, если такой ингредиент уже существует, обновляем его количество
-                existing_ingredient = instance.ingredients.filter(pk=current_ingredient.pk).first()
-                if existing_ingredient:
-                    instance.ingredients.through.objects.filter(
-                        recipe=instance,
-                        ingredient=current_ingredient
-                    ).update(amount=amount)
-                else:
-                    instance.ingredients.add(
-                        current_ingredient,
-                        through_defaults={
-                            'amount': amount
-                        }
-                    )
-                    instance.save()
+                instance.ingredients.add(
+                    current_ingredient,
+                    through_defaults={
+                        'amount': amount
+                    }
+                )
+            instance.save()
         return super().update(instance, validated_data)
 
 
