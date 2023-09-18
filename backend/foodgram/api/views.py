@@ -99,11 +99,11 @@ class FavoriteRecipeView(CreateDestroyView):
 class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
     """Представление просмотр подсписок"""
     serializer_class = SubscriptionReadSerializer
+    #ordering = ['author']
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Subscription.objects.filter(subscriber=user).select_related('author')
-        print(queryset)
+        queryset = Subscription.objects.filter(subscriber=user).select_related('author').order_by('pk')
         return queryset
         
 
