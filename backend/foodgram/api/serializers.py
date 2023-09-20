@@ -150,6 +150,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
+        if not ingredients or not tags_data:
+            raise serializers.ValidationError('Ингредиенты и теги обязательны для заполнения.')
         author = self.context['request'].user
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
@@ -165,8 +167,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredient_used', None)
-        tags_data = validated_data.pop('tags', None)
+        ingredients_data = validated_data.pop('ingredient_used')
+        tags_data = validated_data.pop('tags')
+        if not ingredients_data or not tags_data:
+            raise serializers.ValidationError('Ингредиенты и теги обязательны для заполнения.')
         instance.tags.set(tags_data)
         instance.ingredients.clear()
         if ingredients_data:

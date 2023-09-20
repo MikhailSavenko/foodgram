@@ -10,6 +10,7 @@ from users.models import User, Subscription
 from rest_framework.decorators import action, api_view, permission_classes
 from django.http import HttpResponse
 from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 @api_view(['GET'])
 def download_shopping_cart(request):
@@ -77,7 +78,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    filter_backends = [filters.OrderingFilter]
+    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
     ordering_fields = ['created_at']
 # НАСТРОИТЬ PERMISSIONS
