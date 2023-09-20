@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, FavoriteRecipeSerializer, SubscriptionReadSerializer, SubscriptionCreateSerializer, ShoppingCartSerializer
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from .filters import RecipeFilter
 from .viewset import CreateDestroyView
@@ -11,6 +11,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from django.http import HttpResponse
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
+from .permissions import IsAuthorOrReadOnly
+from django.shortcuts import get_object_or_404
+
 
 @api_view(['GET'])
 def download_shopping_cart(request):
@@ -76,11 +79,12 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all().order_by('created_at')
     serializer_class = RecipeSerializer
     filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
     ordering_fields = ['created_at']
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 # НАСТРОИТЬ PERMISSIONS
 
 
@@ -122,10 +126,11 @@ class SubscriptionsCreateView(CreateDestroyView):
     def destroy(self, request, *args, **kwargs):
         subscriber = self.request.user
         author_id = self.kwargs['author_id']
-
+        author = get_object_or_404(User, id=author_id)
         try:
-            subscription = Subscription.objects.get(subscriber=subscriber, author=author_id)
+            subscription = Subscription.objects.get(subscriber=subscriber, author=author)
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Subscription.DoesNotExist:
             return Response({'error': 'Вы не были подписаны на этого автора'}, status=status.HTTP_400_BAD_REQUEST)
+        

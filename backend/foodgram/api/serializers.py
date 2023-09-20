@@ -5,6 +5,7 @@ from .validators import validate
 from users.models import Subscription, User
 import base64
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
@@ -26,10 +27,10 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         try:
             recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
-            raise serializers.ValidationError('Рецепт с указанным id не существует')
+            raise serializers.ValidationError({'error': 'Рецепт с указанным id не существует'})
         # проверяем не находится ли он уже в 
         if ShoppingCart.objects.filter(shopping_recipe=recipe, user=user).exists():
-            raise serializers.ValidationError('Рецепт уже в списке покупок')
+            raise serializers.ValidationError({'error': 'Рецепт уже в списке покупок'})
         # добавляем в избранное
         shopping_cart = ShoppingCart.objects.create(shopping_recipe=recipe, user=user)
         return shopping_cart
@@ -62,7 +63,7 @@ class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_subscribed')
-        read_only_fields = ('id', 'is_subscribed')
+        read_only_fields = ('id', 'is_subscribed', 'username', 'email', 'first_name', 'last_name')
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
@@ -139,19 +140,23 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
-        is_in_shopping_cart = ShoppingCart.objects.filter(user=user, shopping_recipe=obj).exists()
-        return is_in_shopping_cart
+        if user.is_authenticated:
+            is_in_shopping_cart = ShoppingCart.objects.filter(user=user, shopping_recipe=obj).exists()
+            return is_in_shopping_cart
+        return False
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
-        is_favorited = FavoriteRecipe.objects.filter(user=user, recipe=obj).exists()
-        return is_favorited
+        if user.is_authenticated:
+            is_favorited = FavoriteRecipe.objects.filter(user=user, recipe=obj).exists()
+            return is_favorited
+        return False
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
         if not ingredients or not tags_data:
-            raise serializers.ValidationError('Ингредиенты и теги обязательны для заполнения.')
+            raise serializers.ValidationError({'error': 'Ингредиенты и теги обязательны для заполнения.'})
         author = self.context['request'].user
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
@@ -170,7 +175,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
         if not ingredients_data or not tags_data:
-            raise serializers.ValidationError('Ингредиенты и теги обязательны для заполнения.')
+            raise serializers.ValidationError({'error': 'Ингредиенты и теги обязательны для заполнения.'})
         instance.tags.set(tags_data)
         instance.ingredients.clear()
         if ingredients_data:
@@ -260,13 +265,13 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
         subscriber = self.context['request'].user
         author_id = self.context['view'].kwargs['author_id']
         if author_id == subscriber.id:
-            raise serializers.ValidationError('На себя подписаться нельзя')
+            raise serializers.ValidationError({'error': 'На себя подписаться нельзя'})
         try:
-            author = User.objects.get(id=author_id)
+            author = get_object_or_404(User, id=author_id)
         except User.DoesNotExist:
-            raise serializers.ValidationError('Такого автора не существует')
+            raise serializers.ValidationError({'detail': 'Такого автора не существует'})
         if Subscription.objects.filter(author=author, subscriber=subscriber).exists():
-            raise serializers.ValidationError('Вы уже подписаны на автора')
+            raise serializers.ValidationError({'error': 'Вы уже подписаны на автора'})
         Subscription.objects.create(author=author, subscriber=subscriber)
         return author
 
@@ -290,10 +295,10 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
         try:
             recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
-            raise serializers.ValidationError('Рецепт с указанным id не существует')
+            raise serializers.ValidationError({'error': 'Рецепт с указанным id не существует'})
         # проверяем не находится ли он уже в избранном
         if FavoriteRecipe.objects.filter(recipe=recipe, user=user).exists():
-            raise serializers.ValidationError('Рецепт уже в избранном')
+            raise serializers.ValidationError({'error': 'Рецепт уже в избранном'})
         # добавляем в избранное
         favorite_recipe = FavoriteRecipe.objects.create(recipe=recipe, user=user)
         return favorite_recipe
