@@ -214,13 +214,13 @@ class SubscriptionReadSerializer(serializers.ModelSerializer):
         return recipes_count
     
     def get_recipes(self, obj):
-        recipes_limit = int(self.context['request'].query_params.get('recipes_limit'))
+        recipes_limit = self.context['request'].query_params.get('recipes_limit')
         user = obj.author
         if recipes_limit:
-            # ДОБАВИТЬ СОРТИРОВКУ ПО ДАТЕ ПУБЛИКАЦИИ
-            recipes = Recipe.objects.filter(author=user)[:recipes_limit]
+            recipes_limit = int(recipes_limit)
+            recipes = Recipe.objects.filter(author=user).order_by('created_at')[:recipes_limit]
         else:
-            recipes = Recipe.objects.filter(author=user)
+            recipes = Recipe.objects.filter(author=user).order_by('created_at')
         resipes = RecipeUserSerializer(recipes, many=True).data
         return resipes
     

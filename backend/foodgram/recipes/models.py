@@ -38,6 +38,7 @@ class Recipe(models.Model):
     text = models.TextField(blank=False)
     cooking_time = models.IntegerField(blank=False)
     image = models.ImageField(blank=True, upload_to='recipe_images/')
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class IngredientRecipeAmount(models.Model):

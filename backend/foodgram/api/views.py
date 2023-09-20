@@ -77,7 +77,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    filter_backends = [filters.OrderingFilter]
     filterset_class = RecipeFilter
+    ordering_fields = ['created_at']
 # НАСТРОИТЬ PERMISSIONS
 
 
