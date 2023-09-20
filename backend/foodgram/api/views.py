@@ -2,12 +2,13 @@ from rest_framework.response import Response
 from rest_framework import viewsets, status
 from api.serializers import IngredientSerializer, TagSerializer, RecipeSerializer, FavoriteRecipeSerializer, SubscriptionReadSerializer, SubscriptionCreateSerializer, ShoppingCartSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
+
+from .filters import RecipeFilter
 from .viewset import CreateDestroyView
 from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe, ShoppingCart, IngredientRecipeAmount
 from users.models import User, Subscription
 from rest_framework.decorators import action, api_view, permission_classes
 from django.http import HttpResponse
-
 
 @api_view(['GET'])
 def download_shopping_cart(request):
@@ -73,7 +74,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-# ДОБАВИТЬ ФИЛЬТРАЦИЮ!
+    filterset_class = RecipeFilter
 # НАСТРОИТЬ PERMISSIONS
 
 
@@ -99,7 +100,6 @@ class FavoriteRecipeView(CreateDestroyView):
 class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
     """Представление просмотр подсписок"""
     serializer_class = SubscriptionReadSerializer
-    #ordering = ['author']
 
     def get_queryset(self):
         user = self.request.user
