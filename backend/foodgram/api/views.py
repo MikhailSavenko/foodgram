@@ -9,6 +9,7 @@ from recipes.models import Ingredient, Tag, Recipe, FavoriteRecipe, ShoppingCart
 from users.models import User, Subscription
 from rest_framework.decorators import action, api_view, permission_classes
 from django.http import HttpResponse
+from rest_framework import filters
 
 @api_view(['GET'])
 def download_shopping_cart(request):
@@ -61,7 +62,9 @@ class ShoppingCartCreateView(CreateDestroyView):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление для ингредиента чтение"""
     queryset = Ingredient.objects.all()
+    filter_backends = [filters.SearchFilter]
     serializer_class = IngredientSerializer
+    search_fields = ['^name']
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
