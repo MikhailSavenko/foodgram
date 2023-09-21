@@ -37,7 +37,7 @@ class Recipe(models.Model):
                                   related_name='recipes_tags')
     text = models.TextField(blank=False)
     cooking_time = models.IntegerField(blank=False)
-    image = models.ImageField(blank=True, upload_to='recipe_images/')
+    image = models.ImageField(blank=False, upload_to='recipe_images/')
     created_at = models.DateTimeField(auto_now_add=True)
 
 
