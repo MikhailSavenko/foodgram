@@ -10,6 +10,7 @@ class RecipeFilter(filters.FilterSet):
     is_in_shopping_cart = filters.BooleanFilter(method='filter_is_in_shopping_cart')
 
     def filter_tags(self, queryset, name, value):
+        #для неаутентифицированного пользователя, фильтрация по тегам отключена
         if self.request.user.is_authenticated:
             return queryset.filter(tags__slug=value)
         return queryset

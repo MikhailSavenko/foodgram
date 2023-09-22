@@ -69,12 +69,16 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [filters.SearchFilter]
     serializer_class = IngredientSerializer
     search_fields = ['^name']
+    pagination_class = None
+    permission_classes = [AllowAny]
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление для тэга чтение"""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -85,7 +89,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     ordering_fields = ['created_at']
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
-# НАСТРОИТЬ PERMISSIONS
 
 
 class FavoriteRecipeView(CreateDestroyView):
