@@ -83,11 +83,11 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
-    queryset = Recipe.objects.all().order_by('created_at')
+    queryset = Recipe.objects.all().order_by('-created_at')
     serializer_class = RecipeSerializer
     filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
-    ordering_fields = ['created_at']
+    ordering_fields = ['-created_at']
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
 
