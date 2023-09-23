@@ -1,5 +1,8 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -8,13 +11,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)b#)9btd%l(e--o%)m#f$=i#bz7g(kg3&_6)j**_7n6(5a(*v='
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-settings-secret-key')
+DEBUG = os.getenv('DEBUG') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+if os.getenv('ALLOWED_HOSTS') is not None:
+    ALLOWED_HOSTS = [host.strip() for host in
+                     os.getenv('ALLOWED_HOSTS').split(',')]
+else:
+    ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'users.User'
 
