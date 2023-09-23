@@ -1,7 +1,7 @@
-from rest_framework import viewsets,  mixins
+from rest_framework import mixins, viewsets
 
 
-class CreateDestroyView(mixins.CreateModelMixin, 
-                         mixins.DestroyModelMixin,
-                         viewsets.GenericViewSet):
+class CreateDestroyView(
+    mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
+):
     pass

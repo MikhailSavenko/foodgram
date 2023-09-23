@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,8 +16,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-settings-secret-key')
 DEBUG = os.getenv('DEBUG') == 'True'
 
 if os.getenv('ALLOWED_HOSTS') is not None:
-    ALLOWED_HOSTS = [host.strip() for host in
-                     os.getenv('ALLOWED_HOSTS').split(',')]
+    ALLOWED_HOSTS = [
+        host.strip() for host in os.getenv('ALLOWED_HOSTS').split(',')
+    ]
 else:
     ALLOWED_HOSTS = []
 
@@ -31,15 +33,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'api',
     'recipes',
     'users',
-
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
-
     'django_filters',
 ]
 
@@ -58,8 +57,7 @@ DJOSER = {
         'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
         'user_create': ['rest_framework.permissions.AllowAny'],
         'user_list': ['rest_framework.permissions.AllowAny'],
-    }
-    
+    },
 }
 
 REST_FRAMEWORK = {
@@ -68,7 +66,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'api.pagination.CustomPagination',
     'PAGE_SIZE': 6,
-    
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
@@ -132,7 +129,7 @@ DATABASES = {
         'USER': os.getenv('POSTGRES_USER', 'django'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', 5432)
+        'PORT': os.getenv('DB_PORT', 5432),
     }
 }
 

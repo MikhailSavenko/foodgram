@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Recipe, Ingredient, Tag, FavoriteRecipe, ShoppingCart, IngredientRecipeAmount
+from .models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
+                     Recipe, ShoppingCart, Tag)
 
 
 class IngredientInline(admin.TabularInline):
@@ -10,6 +11,7 @@ class IngredientInline(admin.TabularInline):
 # class FavoriteRecipeInline(admin.TabularInline):
 #     model = FavoriteRecipe
 
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = [IngredientInline]
@@ -18,7 +20,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def recipe_in_favoriterecipe(self, obj):
         return FavoriteRecipe.objects.filter(recipe=obj).count()
-    
+
     recipe_in_favoriterecipe.admin_order_field = 'recipe_in_favoriterecipe'
 
 
