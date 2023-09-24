@@ -12,7 +12,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   backend:
-    build: ../backend/foodgram/
+    image: mikesave/foodgram_backend
     env_file: .env
     depends_on:
       - db
@@ -20,9 +20,8 @@ services:
       - static:/backend_static/
       - media:/app/media
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: mikesave/foodgram_frontend
+    env_file: .env
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
@@ -30,9 +29,7 @@ services:
       - db
       - backend
   nginx:
-    build:
-      context: ../infra/
-      dockerfile: Dockerfile
+    image: mikesave/foodgram_infra
     ports:
       - "8000:80"
     volumes:
