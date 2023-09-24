@@ -24,6 +24,8 @@ else:
 
 AUTH_USER_MODEL = 'users.User'
 
+
+CSRF_TRUSTED_ORIGINS = ['https://foodgram-mikesave.hopto.org']
 # Application definition
 
 INSTALLED_APPS = [
