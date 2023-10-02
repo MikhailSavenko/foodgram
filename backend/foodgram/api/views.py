@@ -17,6 +17,7 @@ from users.models import Subscription, User
 from .filters import RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .viewset import CreateDestroyView
+from django.db.models import Exists, OuterRef
 
 
 @api_view(['GET'])
@@ -106,6 +107,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     ordering_fields = ['-created_at']
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Recipe.objects.annotate(is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+            user=user, shopping_recipe=OuterRef('id'))), is_favorited=Exists(FavoriteRecipe.objects.filter(
+            user=user, recipe=OuterRef('id')
+            ))).order_by('-created_at')
+        return Recipe.objects.all().order_by('-created_at')
 
 
 class FavoriteRecipeView(CreateDestroyView):

@@ -1,13 +1,15 @@
-import base64
+#import base64
 
-from django.core.files.base import ContentFile
+#from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
                             Recipe, ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import Subscription, User
 
-from .validators import validate
+from djoser.serializers import UserSerializer, UserCreateSerializer
+from drf_extra_fields.fields import Base64ImageField
+from django.db import transaction
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
@@ -80,7 +82,7 @@ class IngredientM2MSerializer(serializers.ModelSerializer):
         read_only_fields = ('ingredient',)
 
 
-class UserReadSerializer(serializers.ModelSerializer):
+class UserReadSerializer(UserSerializer):
     """Сериализатор чтения пользователя"""
 
     is_subscribed = serializers.SerializerMethodField()
@@ -114,7 +116,7 @@ class UserReadSerializer(serializers.ModelSerializer):
         return False
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(UserCreateSerializer):
     """Сериализатор создания пользователя"""
 
     class Meta:
@@ -128,17 +130,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'last_name',
         )
         read_only_fields = ('id',)
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        """Хешируем пароль"""
-        password = validated_data.pop('password')
-        user = User.objects.create_user(**validated_data, password=password)
-        return user
-
-    def validate(self, data):
-        validate(self, data)
-        return super().validate(data)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -160,28 +151,13 @@ class TagSerializer(serializers.ModelSerializer):
         return data_dict['id']
 
 
-class Base64ImageField(serializers.ImageField):
-    """Поле image для Recipe декодировка base64"""
-
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-
-            data = ContentFile(
-                base64.b64decode(imgstr), name=f'uploaded_image.{ext}'
-            )
-
-        return super().to_internal_value(data)
-
-
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт"""
 
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     author = UserReadSerializer(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
     tags = TagSerializer(many=True)
     image = Base64ImageField()
 
@@ -197,34 +173,17 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time',
             'author',
             'is_favorited',
-            'is_in_shopping_cart',
+            'is_in_shopping_cart'
         )
         # серик не ждет от пост запроса это поле, а сам подставит при создании
         read_only_fields = (
             'id',
             'author',
             'is_favorited',
-            'is_in_shopping_cart',
+            'is_in_shopping_cart'
         )
-
-    def get_is_in_shopping_cart(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            is_in_shopping_cart = ShoppingCart.objects.filter(
-                user=user, shopping_recipe=obj
-            ).exists()
-            return is_in_shopping_cart
-        return False
-
-    def get_is_favorited(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            is_favorited = FavoriteRecipe.objects.filter(
-                user=user, recipe=obj
-            ).exists()
-            return is_favorited
-        return False
-
+    
+    @transaction.atomic
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
@@ -242,7 +201,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                 current_ingredient, through_defaults={'amount': amount}
             )
         return recipe
-
+    
+    @transaction.atomic
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
