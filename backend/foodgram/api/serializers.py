@@ -128,7 +128,7 @@ class UserCreateSerializer(UserCreateSerializer):
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор тэга"""
-    
+
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
@@ -136,7 +136,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
-    """Сериалайзер Рецепт GET """
+    """Сериалайзер Рецепт GET"""
 
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     author = UserReadSerializer(read_only=True)
@@ -157,19 +157,22 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'cooking_time',
             'author',
             'is_favorited',
-            'is_in_shopping_cart'
+            'is_in_shopping_cart',
         )
         read_only_fields = (
             'id',
             'author',
             'is_favorited',
-            'is_in_shopping_cart'
+            'is_in_shopping_cart',
         )
 
 
 class RecipeCreateUpdateSerializer(RecipeReadSerializer):
     """Сериалайзер Рецепт POST/PATCH/DEL"""
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all())
+
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.all()
+    )
 
     class Meta:
         model = Recipe
@@ -181,15 +184,15 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
             'text',
             'cooking_time',
             'is_favorited',
-            'is_in_shopping_cart'
+            'is_in_shopping_cart',
         )
         read_only_fields = (
             'id',
             'author',
             'is_favorited',
-            'is_in_shopping_cart'
+            'is_in_shopping_cart',
         )
-    
+
     @transaction.atomic
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
@@ -205,10 +208,14 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
         for ingredient in ingredients:
             current_ingredient = ingredient.get('ingredient')
             amount = ingredient.get('amount')
-            ingredient_data.append(IngredientRecipeAmount(recipe=recipe, ingredient=current_ingredient, amount=amount))
+            ingredient_data.append(
+                IngredientRecipeAmount(
+                    recipe=recipe, ingredient=current_ingredient, amount=amount
+                )
+            )
         IngredientRecipeAmount.objects.bulk_create(ingredient_data)
         return recipe
-    
+
     @transaction.atomic
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredient_used')

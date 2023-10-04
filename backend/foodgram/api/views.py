@@ -77,12 +77,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 else:
                     shopping_cart[name] = {'amount': amount, 'unit': unit}
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename=shopping_cart.txt'
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename=shopping_cart.txt'
 
         for name, data in shopping_cart.items():
             response.write(f"{name} ({data['unit']}) — {data['amount']}\n")
         return response
-    
+
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PATCH', 'DELETE']:
             return RecipeCreateUpdateSerializer
@@ -90,14 +92,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         else:
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    
+
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
-            return Recipe.objects.annotate(is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-            user=user, shopping_recipe=OuterRef('id'))), is_favorited=Exists(FavoriteRecipe.objects.filter(
-            user=user, recipe=OuterRef('id')
-            ))).order_by('-created_at')
+            return Recipe.objects.annotate(
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(
+                        user=user, shopping_recipe=OuterRef('id')
+                    )
+                ),
+                is_favorited=Exists(
+                    FavoriteRecipe.objects.filter(
+                        user=user, recipe=OuterRef('id')
+                    )
+                ),
+            ).order_by('-created_at')
         return Recipe.objects.all().order_by('-created_at')
 
 
@@ -105,7 +115,9 @@ class BaseRecipeActionView(CreateDestroyView):
     """Базовый класс для представлений Избранного и Списка покупок."""
 
     def get_lookup_field(self):
-        raise NotImplementedError("Метод get_lookup_field должен быть переопределен")
+        raise NotImplementedError(
+            "Метод get_lookup_field должен быть переопределен"
+        )
 
     def destroy(self, request, *args, **kwargs):
         user = self.request.user
@@ -113,13 +125,16 @@ class BaseRecipeActionView(CreateDestroyView):
 
         try:
             recipe_item = self.queryset.get(
-                **{self.get_lookup_field(): recipe_id, 'user': user }
+                **{self.get_lookup_field(): recipe_id, 'user': user}
             )
             recipe_item.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except self.queryset.model.DoesNotExist:
             return Response(
-                {'error': f'Рецепта нет в {self.queryset.model._meta.verbose_name}'},
+                {
+                    'error':
+                    f'Рецепта нет в {self.queryset.model._meta.verbose_name}'
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
