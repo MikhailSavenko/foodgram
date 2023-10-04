@@ -1,6 +1,3 @@
-#import base64
-
-#from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
                             Recipe, ShoppingCart, Tag)
@@ -134,25 +131,15 @@ class UserCreateSerializer(UserCreateSerializer):
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор тэга"""
-
+    
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
         read_only_fields = ('name', 'color', 'slug')
 
-    def to_internal_value(self, data):
-        """Достает id из списка запроса и
-        передает в поле id как значение словаря"""
-        data_dict = {}
-        data = str(data)
-        for i in data:
-            i = int(i)
-            data_dict['id'] = i
-        return data_dict['id']
 
-
-class RecipeSerializer(serializers.ModelSerializer):
-    """Сериалайзер Рецепт"""
+class RecipeReadSerializer(serializers.ModelSerializer):
+    """Сериалайзер Рецепт GET """
 
     ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
     author = UserReadSerializer(read_only=True)
@@ -175,7 +162,30 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_favorited',
             'is_in_shopping_cart'
         )
-        # серик не ждет от пост запроса это поле, а сам подставит при создании
+        read_only_fields = (
+            'id',
+            'author',
+            'is_favorited',
+            'is_in_shopping_cart'
+        )
+
+
+class RecipeCreateUpdateSerializer(RecipeReadSerializer):
+    """Сериалайзер Рецепт POST/PATCH/DEL"""
+    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all())
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'ingredients',
+            'tags',
+            'image',
+            'name',
+            'text',
+            'cooking_time',
+            'is_favorited',
+            'is_in_shopping_cart'
+        )
         read_only_fields = (
             'id',
             'author',

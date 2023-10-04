@@ -1,5 +1,5 @@
 from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
-                             RecipeSerializer, ShoppingCartSerializer,
+                             RecipeCreateUpdateSerializer, RecipeReadSerializer,ShoppingCartSerializer,
                              SubscriptionCreateSerializer,
                              SubscriptionReadSerializer, TagSerializer)
 from django.http import HttpResponse
@@ -102,12 +102,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
 
     queryset = Recipe.objects.all().order_by('-created_at')
-    serializer_class = RecipeSerializer
     filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
     ordering_fields = ['-created_at']
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
-
+    
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PATCH', 'DELETE']:
+            return RecipeCreateUpdateSerializer
+        elif self.request.method == 'GET':
+            return RecipeReadSerializer
+        else:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
