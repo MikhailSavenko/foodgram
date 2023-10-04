@@ -194,26 +194,26 @@ class RecipeSerializer(serializers.ModelSerializer):
         author = self.context['request'].user
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
+        ingredient_data = []
         for ingredient in ingredients:
             current_ingredient = ingredient.get('ingredient')
             amount = ingredient.get('amount')
-            recipe.ingredients.add(
-                current_ingredient, through_defaults={'amount': amount}
-            )
+            ingredient_data.append(IngredientRecipeAmount(recipe=recipe, ingredient=current_ingredient, amount=amount))
+        IngredientRecipeAmount.objects.bulk_create(ingredient_data)
         return recipe
     
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredient_used')
+        ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
-        if not ingredients_data or not tags_data:
+        if not ingredients or not tags_data:
             raise serializers.ValidationError(
                 {'error': 'Ингредиенты и теги обязательны для заполнения.'}
             )
         instance.tags.set(tags_data)
         instance.ingredients.clear()
-        if ingredients_data:
-            for ingredient in ingredients_data:
+        if ingredients:
+            for ingredient in ingredients:
                 current_ingredient = ingredient.get('ingredient')
                 amount = ingredient.get('amount')
                 instance.ingredients.add(
