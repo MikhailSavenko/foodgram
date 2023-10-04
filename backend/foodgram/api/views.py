@@ -1,5 +1,5 @@
 from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
-                             RecipeCreateUpdateSerializer, RecipeReadSerializer,ShoppingCartSerializer,
+                             RecipeCreateUpdateSerializer, RecipeReadSerializer, ShoppingCartSerializer,
                              SubscriptionCreateSerializer,
                              SubscriptionReadSerializer, TagSerializer)
 from django.http import HttpResponse
@@ -8,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
                             Recipe, ShoppingCart, Tag)
 from rest_framework import filters, status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
@@ -18,40 +18,6 @@ from .filters import RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .viewset import CreateDestroyView
 from django.db.models import Exists, OuterRef
-
-
-@api_view(['GET'])
-def download_shopping_cart(request):
-    """Скачиваем список покупок"""
-    user = request.user
-    shopping_cart_items = ShoppingCart.objects.filter(
-        user=user
-    ).select_related('shopping_recipe')
-
-    shopping_cart = {}
-
-    for item in shopping_cart_items:
-        recipe = item.shopping_recipe
-        ingredient_amounts = IngredientRecipeAmount.objects.filter(
-            recipe=recipe
-        )
-
-        for ingrefient_amount in ingredient_amounts:
-            ingredient = ingrefient_amount.ingredient
-            name = ingredient.name
-            amount = ingrefient_amount.amount
-            unit = ingredient.measurement_unit
-
-            if name in shopping_cart:
-                shopping_cart[name]['amount'] += amount
-            else:
-                shopping_cart[name] = {'amount': amount, 'unit': unit}
-    response = HttpResponse(content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename=shopping_cart.txt'
-
-    for name, data in shopping_cart.items():
-        response.write(f"{name} ({data['unit']}) — {data['amount']}\n")
-    return response
 
 
 class ShoppingCartCreateView(CreateDestroyView):
@@ -106,6 +72,39 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     ordering_fields = ['-created_at']
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    @action(detail=False)
+    def download_shopping_cart(self, request):
+        """Скачиваем список покупок"""
+        user = request.user
+        shopping_cart_items = ShoppingCart.objects.filter(
+            user=user
+        ).select_related('shopping_recipe')
+
+        shopping_cart = {}
+
+        for item in shopping_cart_items:
+            recipe = item.shopping_recipe
+            ingredient_amounts = IngredientRecipeAmount.objects.filter(
+                recipe=recipe
+            )
+
+            for ingrefient_amount in ingredient_amounts:
+                ingredient = ingrefient_amount.ingredient
+                name = ingredient.name
+                amount = ingrefient_amount.amount
+                unit = ingredient.measurement_unit
+
+                if name in shopping_cart:
+                    shopping_cart[name]['amount'] += amount
+                else:
+                    shopping_cart[name] = {'amount': amount, 'unit': unit}
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename=shopping_cart.txt'
+
+        for name, data in shopping_cart.items():
+            response.write(f"{name} ({data['unit']}) — {data['amount']}\n")
+        return response
     
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PATCH', 'DELETE']:
@@ -123,7 +122,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             user=user, recipe=OuterRef('id')
             ))).order_by('-created_at')
         return Recipe.objects.all().order_by('-created_at')
-
+    
 
 class FavoriteRecipeView(CreateDestroyView):
     """Представление для Избранного"""

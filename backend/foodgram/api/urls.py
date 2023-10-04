@@ -1,24 +1,19 @@
 from api.views import (FavoriteRecipeView, IngredientViewSet, RecipeViewSet,
                        ShoppingCartCreateView, SubscriptionsCreateView,
-                       SubscriptionsReadView, TagViewSet,
-                       download_shopping_cart)
+                       SubscriptionsReadView, TagViewSet)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 app_name = 'api'
 
 router = DefaultRouter()
+router.register(r'recipes', RecipeViewSet, basename='recipes')
 router.register(r'ingredients', IngredientViewSet, basename='ingredients')
 router.register(r'tags', TagViewSet, basename='tags')
-router.register(r'recipes', RecipeViewSet, basename='recipes')
 
 
 urlpatterns = [
-    path(
-        'recipes/download_shopping_cart/',
-        download_shopping_cart,
-        name='download_shopping_cart',
-    ),
+    path('', include(router.urls)),
     path(
         'recipes/<int:recipe_id>/shopping_cart/',
         ShoppingCartCreateView.as_view(
@@ -44,5 +39,4 @@ urlpatterns = [
         ),
         name='favorite-recipe',
     ),
-    path('', include(router.urls)),
 ]
