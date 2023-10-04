@@ -1,7 +1,9 @@
 from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
-                             RecipeCreateUpdateSerializer, RecipeReadSerializer, ShoppingCartSerializer,
+                             RecipeCreateUpdateSerializer,
+                             RecipeReadSerializer, ShoppingCartSerializer,
                              SubscriptionCreateSerializer,
                              SubscriptionReadSerializer, TagSerializer)
+from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,7 +19,6 @@ from users.models import Subscription, User
 from .filters import RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .viewset import CreateDestroyView
-from django.db.models import Exists, OuterRef
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

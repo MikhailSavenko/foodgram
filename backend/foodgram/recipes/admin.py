@@ -8,10 +8,6 @@ class IngredientInline(admin.TabularInline):
     model = IngredientRecipeAmount
 
 
-# class FavoriteRecipeInline(admin.TabularInline):
-#     model = FavoriteRecipe
-
-
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = [IngredientInline]

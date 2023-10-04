@@ -1,12 +1,11 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
                             Recipe, ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import Subscription, User
-
-from djoser.serializers import UserSerializer, UserCreateSerializer
-from drf_extra_fields.fields import Base64ImageField
-from django.db import transaction
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
@@ -33,14 +32,12 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         recipe_id = self.context['view'].kwargs['recipe_id']
         user = self.context['request'].user
-        # проверяем существование рецепта
         try:
             recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        # проверяем не находится ли он уже в
         if ShoppingCart.objects.filter(
             shopping_recipe=recipe, user=user
         ).exists():
@@ -388,19 +385,16 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         recipe_id = self.context['view'].kwargs['recipe_id']
-        # проверяем существование рецепта
         try:
             recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        # проверяем не находится ли он уже в избранном
         if FavoriteRecipe.objects.filter(recipe=recipe, user=user).exists():
             raise serializers.ValidationError(
                 {'error': 'Рецепт уже в избранном'}
             )
-        # добавляем в избранное
         favorite_recipe = FavoriteRecipe.objects.create(
             recipe=recipe, user=user
         )
