@@ -19,21 +19,21 @@ class RecipeFilter(filters.FilterSet):
 
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
-        if user.is_authenticated:
-            if value:
-                # залазим в модель FavoriteRecipe
-                return queryset.filter(favoriterecipe__user=user)
-            return queryset
-        return queryset.none()
+        if user.is_anonymous:
+            return queryset.none()
+        if value:
+            # залазим в модель FavoriteRecipe
+            return queryset.filter(favoriterecipe__user=user)
+        return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         user = self.request.user
-        if user.is_authenticated:
-            if value:
-                # залазим в модель ShooppingCart
-                return queryset.filter(shoppingcart__user=user)
-            return queryset
-        return queryset.none()
+        if user.is_anonymous:
+            return queryset.none()
+        if value:
+            # залазим в модель ShooppingCart
+            return queryset.filter(shoppingcart__user=user)
+        return queryset
 
     class Meta:
         model = Recipe
