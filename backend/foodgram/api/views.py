@@ -20,30 +20,6 @@ from .viewset import CreateDestroyView
 from django.db.models import Exists, OuterRef
 
 
-class ShoppingCartCreateView(CreateDestroyView):
-    """Добавления/удаления рецепта из Списка покупок"""
-
-    queryset = ShoppingCart.objects.all()
-    serializer_class = ShoppingCartSerializer
-    lookup_field = 'recipe_id'
-
-    def destroy(self, request, *args, **kwargs):
-        user = self.request.user
-        recipe_id = self.kwargs['recipe_id']
-
-        try:
-            shopping_cart_recipe = ShoppingCart.objects.get(
-                shopping_recipe=recipe_id, user=user
-            )
-            shopping_cart_recipe.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except ShoppingCart.DoesNotExist:
-            return Response(
-                {'error': 'Рецепта нет в списке покупок'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление для ингредиента чтение"""
 
@@ -122,31 +98,54 @@ class RecipeViewSet(viewsets.ModelViewSet):
             user=user, recipe=OuterRef('id')
             ))).order_by('-created_at')
         return Recipe.objects.all().order_by('-created_at')
-    
 
-class FavoriteRecipeView(CreateDestroyView):
-    """Представление для Избранного"""
 
-    queryset = FavoriteRecipe.objects.all()
-    serializer_class = FavoriteRecipeSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'recipe_id'
+class BaseRecipeActionView(CreateDestroyView):
+    """Базовый класс для представлений Избранного и Списка покупок."""
+
+    def get_lookup_field(self):
+        raise NotImplementedError("Метод get_lookup_field должен быть переопределен")
 
     def destroy(self, request, *args, **kwargs):
         user = self.request.user
         recipe_id = self.kwargs['recipe_id']
 
         try:
-            favorite_recipe = FavoriteRecipe.objects.get(
-                recipe=recipe_id, user=user
+            recipe_item = self.queryset.get(
+                **{self.get_lookup_field(): recipe_id, 'user': user }
             )
-            favorite_recipe.delete()
+            recipe_item.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        except FavoriteRecipe.DoesNotExist:
+        except self.queryset.model.DoesNotExist:
             return Response(
-                {'error': 'Рецепта нет в избранном'},
+                {'error': f'Рецепта нет в {self.queryset.model._meta.verbose_name}'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+class FavoriteRecipeView(BaseRecipeActionView):
+    """Представление для Избранного."""
+
+    lookup_field = 'recipe_id'
+
+    def get_lookup_field(self):
+        return self.lookup_field
+
+    queryset = FavoriteRecipe.objects.all()
+    serializer_class = FavoriteRecipeSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class ShoppingCartCreateView(BaseRecipeActionView):
+    """Добавления/удаления рецепта из Списка покупок."""
+
+    lookup_field = 'shopping_recipe_id'
+
+    def get_lookup_field(self):
+        return self.lookup_field
+
+    queryset = ShoppingCart.objects.all()
+    serializer_class = ShoppingCartSerializer
 
 
 class SubscriptionsReadView(viewsets.ReadOnlyModelViewSet):
