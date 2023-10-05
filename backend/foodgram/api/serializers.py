@@ -185,14 +185,18 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
             'author',
         )
 
-    @transaction.atomic
-    def create(self, validated_data):
+    def get_ingredients_tags_data_or_error(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
         if not ingredients or not tags_data:
             raise serializers.ValidationError(
                 {'error': 'Ингредиенты и теги обязательны для заполнения.'}
             )
+        return ingredients, tags_data
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        ingredients, tags_data = self.get_ingredients_tags_data_or_error(validated_data)
         author = self.context['request'].user
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
@@ -210,12 +214,7 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients = validated_data.pop('ingredient_used')
-        tags_data = validated_data.pop('tags')
-        if not ingredients or not tags_data:
-            raise serializers.ValidationError(
-                {'error': 'Ингредиенты и теги обязательны для заполнения.'}
-            )
+        ingredients, tags_data = self.get_ingredients_tags_data_or_error(validated_data)
         instance.tags.set(tags_data)
         instance.ingredients.clear()
         if ingredients:
