@@ -38,16 +38,12 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        if ShoppingCart.objects.filter(
-            shopping_recipe=recipe, user=user
-        ).exists():
+        shopping_cart, created = ShoppingCart.objects.get_or_create(
+            shopping_recipe=recipe, user=user)
+        if not created:
             raise serializers.ValidationError(
                 {'error': 'Рецепт уже в списке покупок'}
             )
-        # добавляем в избранное
-        shopping_cart = ShoppingCart.objects.create(
-            shopping_recipe=recipe, user=user
-        )
         return shopping_cart
 
 
@@ -59,7 +55,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
-class IngredientM2MSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source='ingredient'
     )
@@ -138,7 +134,7 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт GET"""
 
-    ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
+    ingredients = RecipeIngredientSerializer(many=True, source='ingredient_used')
     author = UserReadSerializer(read_only=True)
     is_favorited = serializers.BooleanField(read_only=True)
     is_in_shopping_cart = serializers.BooleanField(read_only=True)
@@ -183,14 +179,10 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
             'name',
             'text',
             'cooking_time',
-            'is_favorited',
-            'is_in_shopping_cart',
         )
         read_only_fields = (
             'id',
             'author',
-            'is_favorited',
-            'is_in_shopping_cart',
         )
 
     @transaction.atomic
