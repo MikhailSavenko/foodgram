@@ -355,13 +355,11 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'detail': 'Такого автора не существует'}
             )
-        if Subscription.objects.filter(
-            author=author, subscriber=subscriber
-        ).exists():
+        subscription, created = Subscription.objects.get_or_create(author=author, subscriber=subscriber)
+        if not created:
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны на автора'}
             )
-        Subscription.objects.create(author=author, subscriber=subscriber)
         return author
 
 
@@ -389,11 +387,9 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        if FavoriteRecipe.objects.filter(recipe=recipe, user=user).exists():
+        favorite_recipe, created = FavoriteRecipe.objects.get_or_create(recipe=recipe, user=user)
+        if not created:
             raise serializers.ValidationError(
-                {'error': 'Рецепт уже в избранном'}
-            )
-        favorite_recipe = FavoriteRecipe.objects.create(
-            recipe=recipe, user=user
-        )
+                 {'error': 'Рецепт уже в избранном'}
+            ) 
         return favorite_recipe
