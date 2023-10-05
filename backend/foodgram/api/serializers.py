@@ -38,16 +38,13 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        if ShoppingCart.objects.filter(
+        shopping_cart, created = ShoppingCart.objects.get_or_create(
             shopping_recipe=recipe, user=user
-        ).exists():
+        )
+        if not created:
             raise serializers.ValidationError(
                 {'error': 'Рецепт уже в списке покупок'}
             )
-        # добавляем в избранное
-        shopping_cart = ShoppingCart.objects.create(
-            shopping_recipe=recipe, user=user
-        )
         return shopping_cart
 
 
@@ -59,7 +56,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
-class IngredientM2MSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source='ingredient'
     )
@@ -138,7 +135,9 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериалайзер Рецепт GET"""
 
-    ingredients = IngredientM2MSerializer(many=True, source='ingredient_used')
+    ingredients = RecipeIngredientSerializer(
+        many=True, source='ingredient_used'
+    )
     author = UserReadSerializer(read_only=True)
     is_favorited = serializers.BooleanField(read_only=True)
     is_in_shopping_cart = serializers.BooleanField(read_only=True)
@@ -183,24 +182,26 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
             'name',
             'text',
             'cooking_time',
-            'is_favorited',
-            'is_in_shopping_cart',
         )
         read_only_fields = (
             'id',
             'author',
-            'is_favorited',
-            'is_in_shopping_cart',
         )
 
-    @transaction.atomic
-    def create(self, validated_data):
+    def get_ingredients_tags_data_or_error(self, validated_data):
         ingredients = validated_data.pop('ingredient_used')
         tags_data = validated_data.pop('tags')
         if not ingredients or not tags_data:
             raise serializers.ValidationError(
                 {'error': 'Ингредиенты и теги обязательны для заполнения.'}
             )
+        return ingredients, tags_data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        ingredients, tags_data = self.get_ingredients_tags_data_or_error(
+            validated_data
+        )
         author = self.context['request'].user
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
@@ -218,12 +219,9 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients = validated_data.pop('ingredient_used')
-        tags_data = validated_data.pop('tags')
-        if not ingredients or not tags_data:
-            raise serializers.ValidationError(
-                {'error': 'Ингредиенты и теги обязательны для заполнения.'}
-            )
+        ingredients, tags_data = self.get_ingredients_tags_data_or_error(
+            validated_data
+        )
         instance.tags.set(tags_data)
         instance.ingredients.clear()
         if ingredients:
@@ -364,13 +362,13 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'detail': 'Такого автора не существует'}
             )
-        if Subscription.objects.filter(
+        subscription, created = Subscription.objects.get_or_create(
             author=author, subscriber=subscriber
-        ).exists():
+        )
+        if not created:
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны на автора'}
             )
-        Subscription.objects.create(author=author, subscriber=subscriber)
         return author
 
 
@@ -398,11 +396,11 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'error': 'Рецепт с указанным id не существует'}
             )
-        if FavoriteRecipe.objects.filter(recipe=recipe, user=user).exists():
+        favorite_recipe, created = FavoriteRecipe.objects.get_or_create(
+            recipe=recipe, user=user
+        )
+        if not created:
             raise serializers.ValidationError(
                 {'error': 'Рецепт уже в избранном'}
             )
-        favorite_recipe = FavoriteRecipe.objects.create(
-            recipe=recipe, user=user
-        )
         return favorite_recipe
