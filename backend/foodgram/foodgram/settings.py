@@ -22,7 +22,7 @@ ALLOWED_HOSTS = [
 AUTH_USER_MODEL = 'users.User'
 
 
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = [os.getenv('CSRF_TRUSTED_ORIGINS')]
 # Application definition
 
 INSTALLED_APPS = [

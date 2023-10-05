@@ -17,8 +17,8 @@ from rest_framework.response import Response
 from users.models import Subscription, User
 
 from .filters import RecipeFilter
+from .mixins import CreateDestroyView
 from .permissions import IsAuthorOrReadOnly
-from .viewset import CreateDestroyView
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -44,10 +44,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
 
-    queryset = Recipe.objects.all().order_by('-created_at')
     filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
-    filterset_class = RecipeFilter
     ordering_fields = ['-created_at']
+    filterset_class = RecipeFilter
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     @action(detail=False)
@@ -90,13 +89,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeCreateUpdateSerializer
         elif self.request.method == 'GET':
             return RecipeReadSerializer
-        else:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def get_queryset(self):
         user = self.request.user
+        queryset = Recipe.objects
+
         if user.is_authenticated:
-            return Recipe.objects.annotate(
+            queryset = queryset.annotate(
                 is_in_shopping_cart=Exists(
                     ShoppingCart.objects.filter(
                         user=user, shopping_recipe=OuterRef('id')
@@ -107,8 +106,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         user=user, recipe=OuterRef('id')
                     )
                 ),
-            ).order_by('-created_at')
-        return Recipe.objects.all().order_by('-created_at')
+            )
+        return (
+            queryset.select_related('author')
+            .prefetch_related('ingredients')
+            .order_by('-created_at')
+        )
 
 
 class BaseRecipeActionView(CreateDestroyView):
