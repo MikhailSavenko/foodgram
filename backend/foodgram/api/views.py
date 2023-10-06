@@ -4,7 +4,7 @@ from api.serializers import (FavoriteRecipeSerializer, IngredientSerializer,
                              SubscriptionCreateSerializer,
                              SubscriptionReadSerializer, TagSerializer)
 from django.db.models import Exists, OuterRef
-from django.http import HttpResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import (FavoriteRecipe, Ingredient, IngredientRecipeAmount,
@@ -49,6 +49,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
+    def write_txt(self, name, unit, amount):
+        return f"{name} ({unit}) — {amount}\n"
+
     @action(detail=False)
     def download_shopping_cart(self, request):
         """Скачиваем список покупок"""
@@ -75,13 +78,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     shopping_cart[name]['amount'] += amount
                 else:
                     shopping_cart[name] = {'amount': amount, 'unit': unit}
-        response = HttpResponse(content_type='text/plain')
+        with open('shopping_cart.txt', 'w') as file:
+            for name, data in shopping_cart.items():
+                line = self.write_txt(name, data['unit'], data['amount'])
+                file.write(line)
+        response = FileResponse(
+            open('shopping_cart.txt', 'rb'), as_attachment=True
+        )
         response[
             'Content-Disposition'
         ] = 'attachment; filename=shopping_cart.txt'
-
-        for name, data in shopping_cart.items():
-            response.write(f"{name} ({data['unit']}) — {data['amount']}\n")
         return response
 
     def get_serializer_class(self):

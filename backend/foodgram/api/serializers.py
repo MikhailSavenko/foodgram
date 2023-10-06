@@ -291,10 +291,12 @@ class SubscriptionReadSerializer(serializers.ModelSerializer):
         if recipes_limit:
             recipes_limit = int(recipes_limit)
             recipes = Recipe.objects.filter(author=user).order_by(
-                'created_at'
+                '-created_at'
             )[:recipes_limit]
         else:
-            recipes = Recipe.objects.filter(author=user).order_by('created_at')
+            recipes = Recipe.objects.filter(author=user).order_by(
+                '-created_at'
+            )
         resipes = RecipeUserSerializer(recipes, many=True).data
         return resipes
 
