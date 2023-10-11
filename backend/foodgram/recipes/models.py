@@ -45,7 +45,8 @@ class Recipe(models.Model):
         Tag, blank=False, related_name='recipes_tags'
     )
     text = models.TextField(blank=False)
-    cooking_time = models.IntegerField(blank=False)
+    cooking_time = models.IntegerField(blank=False, default=1,
+                                       validators=[MinValueValidator(1)])
     image = models.ImageField(blank=False, upload_to='recipe_images/')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -56,7 +57,7 @@ class IngredientRecipeAmount(models.Model):
 
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name='ingredient_used'
-    )  # может есть смысл в related_name = amount для сериализатора
+    )
     ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE, related_name='recipe_used'
     )

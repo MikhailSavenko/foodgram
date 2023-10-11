@@ -41,6 +41,31 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
 
 
+def create_shopping_cart(user):
+    shopping_cart_items = ShoppingCart.objects.filter(
+        user=user).select_related('shopping_recipe')
+
+    shopping_cart = {}
+
+    for item in shopping_cart_items:
+        recipe = item.shopping_recipe
+        ingredient_amounts = IngredientRecipeAmount.objects.filter(
+            recipe=recipe
+        )
+
+        for ingrefient_amount in ingredient_amounts:
+            ingredient = ingrefient_amount.ingredient
+            name = ingredient.name
+            amount = ingrefient_amount.amount
+            unit = ingredient.measurement_unit
+
+            if name in shopping_cart:
+                shopping_cart[name]['amount'] += amount
+            else:
+                shopping_cart[name] = {'amount': amount, 'unit': unit}
+    return shopping_cart
+
+
 class RecipeViewSet(viewsets.ModelViewSet):
     """Recipe CRUD"""
 
@@ -49,38 +74,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
-    def write_txt(self, name, unit, amount):
-        return f"{name} ({unit}) — {amount}\n"
-
     @action(detail=False)
     def download_shopping_cart(self, request):
         """Скачиваем список покупок"""
         user = request.user
-        shopping_cart_items = ShoppingCart.objects.filter(
-            user=user
-        ).select_related('shopping_recipe')
+        shopping_cart = create_shopping_cart(user)
 
-        shopping_cart = {}
-
-        for item in shopping_cart_items:
-            recipe = item.shopping_recipe
-            ingredient_amounts = IngredientRecipeAmount.objects.filter(
-                recipe=recipe
-            )
-
-            for ingrefient_amount in ingredient_amounts:
-                ingredient = ingrefient_amount.ingredient
-                name = ingredient.name
-                amount = ingrefient_amount.amount
-                unit = ingredient.measurement_unit
-
-                if name in shopping_cart:
-                    shopping_cart[name]['amount'] += amount
-                else:
-                    shopping_cart[name] = {'amount': amount, 'unit': unit}
         with open('shopping_cart.txt', 'w') as file:
             for name, data in shopping_cart.items():
-                line = self.write_txt(name, data['unit'], data['amount'])
+                line = f"{name} ({data['unit']}) — {data['amount']}\n"
                 file.write(line)
         response = FileResponse(
             open('shopping_cart.txt', 'rb'), as_attachment=True
