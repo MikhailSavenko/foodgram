@@ -195,6 +195,10 @@ class RecipeCreateUpdateSerializer(RecipeReadSerializer):
             raise serializers.ValidationError(
                 {'error': 'Ингредиенты и теги обязательны для заполнения.'}
             )
+        if len(set(ingredient['ingredient']
+                   for ingredient in ingredients)) != len(ingredients):
+            raise serializers.ValidationError({'error':
+                                               'Дублирующиеся ингредиенты'})
         return ingredients, tags_data
 
     @transaction.atomic
